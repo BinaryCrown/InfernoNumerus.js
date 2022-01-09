@@ -1,5 +1,5 @@
 // A large number library which uses logarithms to store numbers up to 10^^900719925474099 (10^^Number.MAX_SAFE_INTEGER).
-// Accuracy is sacrificed if the number is too small (i.e. less than 10^^100), however.
+// Some accuracy is sacrificed if the number is small enough, however.
 // Some snippets of code e.g. Inferno.prototype.mod were borrowed from github.com/aarextiaokhiao/magna_numerus.js/blob/master/logarithmica_numerus_lite.js
 
 (function (globalScope) {
@@ -132,71 +132,117 @@
   Inferno.prototype.add = function (v) {
     v = new Inferno(v);
     var logdiff = this.log - v.log;
-    if (logdiff>=15 || v.l==Number.NEGATIVE_INFINITY) {return this}
-    if (logdiff<=-15 || this.l==Number.NEGATIVE_INFINITY) {return v}
-    v.val = v.log = v.log+Math.log10(1+10**logdiff);
-    return v
-  }
+    if (logdiff >= 15 || v.l == Number.NEGATIVE_INFINITY) {
+      return this;
+    }
+    if (logdiff <= -15 || this.l == Number.NEGATIVE_INFINITY) {
+      return v;
+    }
+    v.log += Math.log10(1 + 10 ** logdiff);
+    v.val = v.log;
+    return v;
+  };
+  Inferno.prototype.sub = function (v) {
+    v = new Inferno(v);
+    let logdiff = this.log - v.log;
+    if (logdiff < 0) {
+      this.log = Number.NEGATIVE_INFINITY;
+      this.val = 0;
+      return this;
+    }
+    if (logdiff >= 15 || v.log == Number.NEGATIVE_INFINITY) {
+      return this;
+    }
+    this.log += Math.log10(1 - 10 ** -logdiff);
+    return this;
+  };
   Inferno.prototype.mul = function (v) {
     v = new Inferno(v);
     this.log += v.log;
     this.val *= v.val;
     return this;
-  }
+  };
+  Inferno.prototype.div = function (v) {
+    v = new Inferno(v);
+    if ((this.log == Number.POSITIVE_INFINITY || this.log == Number.NEGATIVE_INFINITY) && v.log == this.log) {
+      this.log = Number.NEGATIVE_INFINITY;
+      this.val = 0;
+      return this;
+    }
+    this.log -= v.log;
+    this.val /= v.val;
+    return this;
+  };
   Inferno.prototype.pow = function (v) {
     this.log *= v;
     this.val **= v;
     return this;
-  }
+  };
   Inferno.prototype.mod = function (v) {
     v = new Inferno(v);
-    if ((this.log == Number.POSITIVE_INFINITY || this.log == Number.NEGATIVE_INFINITY) && v.log == this.log) {
-      this.log = Number.NEGATIVE_INFINITY
+    if (
+      (this.log == Number.POSITIVE_INFINITY ||
+        this.log == Number.NEGATIVE_INFINITY) &&
+      v.log == this.log
+    ) {
+      this.log = Number.NEGATIVE_INFINITY;
       return this;
-		}
+    }
     var logdiff = this.log - v.log;
-    if (logdiff < 0) {return this;}
-    if (logdiff >= 15 || logdiff == 0) {v.log = Number.NEGATIVE_INFINITY;}
-    else {
-      var modulo = 10 ** logdiff
-      var modInt = Math.floor(modulo)
-      if (modulo == modInt) {v.log = Number.NEGATIVE_INFINITY}
-      else {v.log += Math.log10(modulo-modInt)}
-		}
+    if (logdiff < 0) {
+      return this;
+    }
+    if (logdiff >= 15 || logdiff == 0) {
+      v.log = Number.NEGATIVE_INFINITY;
+    } else {
+      var modulo = 10 ** logdiff;
+      var modInt = Math.floor(modulo);
+      if (modulo == modInt) {
+        v.log = Number.NEGATIVE_INFINITY;
+      } else {
+        v.log += Math.log10(modulo - modInt);
+      }
+    }
     return v;
-  }
+  };
   Inferno.prototype.inv = function () {
     this.log = -this.log;
     return this;
-  }
+  };
   Inferno.prototype.eq = function (v) {
     v = new Inferno(v);
     return this.log == v.log;
-  }
+  };
   Inferno.prototype.ex = function (v) {
     v = new Inferno(v);
     return this.log === v.log;
-  }
+  };
   Inferno.prototype.gt = function (v) {
     v = new Inferno(v);
     return this.log > v.log;
-  }
+  };
   Inferno.prototype.gte = function (v) {
     v = new Inferno(v);
     return this.log >= v.log;
-  }
+  };
   Inferno.prototype.lt = function (v) {
     v = new Inferno(v);
     return this.log < v.log;
-  }
+  };
   Inferno.prototype.lte = function (v) {
     v = new Inferno(v);
     return this.log <= v.log;
-  }
+  };
   Inferno.prototype.bool = function () {
-    if (this.log == Number.NEGATIVE_INFINITY || this == null || this == undefined) {return false;}
+    if (
+      this.log == Number.NEGATIVE_INFINITY ||
+      this == null ||
+      this == undefined
+    ) {
+      return false;
+    }
     return true;
-  }
+  };
   Inferno.prototype.IsInf = function () {
     let z = [Number.MAX_SAFE_INTEGER];
     for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
@@ -204,7 +250,7 @@
     }
     let k = Inferno.fromArray(z);
     return this.log <= k.log();
-  }
+  };
   Inferno.prototype.IsZero = function () {
     let z = [Number.MAX_SAFE_INTEGER];
     for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
@@ -212,18 +258,67 @@
     }
     let k = Inferno.fromArray(z);
     return this.log <= -k;
-  }
-  Inferno.prototype.doub = function () {return this.mul(2);}
-  Inferno.prototype.trip = function () {return this.mul(3);}
-  Inferno.prototype.half = function () {return this.mul(1/2);}
-  Inferno.prototype.third = function () {return this.mul(1/3);}
-  Inferno.prototype.sqr = function () {return this.pow(2);}
-  Inferno.prototype.cb = function () {return this.pow(3);}
-  Inferno.prototype.nroot = function (v) {return this.pow(1/v);}
-  Inferno.prototype.sqrt = function () {return this.nroot(2);}
-  Inferno.prototype.cbrt = function () {return this.nroot(3);}
-  Inferno.prototype.log = function () {return new Inferno(this.log);}
-  Inferno.prototype.ran = function () {return this.mul(Math.random());}
-  Inferno.prototype.num = function () {return this.toNumber();}
-  
+  };
+  Inferno.prototype.doub = function () {
+    return this.mul(2);
+  };
+  Inferno.prototype.trip = function () {
+    return this.mul(3);
+  };
+  Inferno.prototype.half = function () {
+    return this.mul(1 / 2);
+  };
+  Inferno.prototype.third = function () {
+    return this.mul(1 / 3);
+  };
+  Inferno.prototype.sqr = function () {
+    return this.pow(2);
+  };
+  Inferno.prototype.cb = function () {
+    return this.pow(3);
+  };
+  Inferno.prototype.nroot = function (v) {
+    return this.pow(1 / v);
+  };
+  Inferno.prototype.sqrt = function () {
+    return this.nroot(2);
+  };
+  Inferno.prototype.cbrt = function () {
+    return this.nroot(3);
+  };
+  Inferno.prototype.log = function () {
+    return new Inferno(this.log);
+  };
+  Inferno.prototype.ran = function () {
+    return this.mul(Math.random());
+  };
+  Inferno.prototype.num = function () {
+    return this.toNumber();
+  };
+  Inferno.prototype.neq = function (v) {
+    return !this.eq(v);
+  };
+  Inferno.prototype.nex = function (v) {
+    return !this.ex(v);
+  };
+  Inferno.prototype.min = function (v) {
+    return this.lt(v) ? this : v;
+  };
+  Inferno.prototype.max = function (v) {
+    return this.gt(v) ? this : v;
+  };
+
+  // CONSTANTS
+
+  Inferno.prototype.zero = new Inferno(0);
+  Inferno.prototype.one = new Inferno(1);
+  Inferno.prototype.E = new Inferno(Math.E);
+  Inferno.prototype.LN2 = new Inferno(Math.LN2);
+  Inferno.prototype.LN10 = new Inferno(Math.LN10);
+  Inferno.prototype.LOG2E = new Inferno(Math.LOG2E);
+  Inferno.prototype.LOG10E = new Inferno(Math.LOG10E);
+  Inferno.prototype.PI = new Inferno(Math.PI);
+  Inferno.prototype.SQRT1_2 = new Inferno(Math.SQRT1_2);
+  Inferno.prototype.SQRT2 = new Inferno(Math.SQRT2);
+  Inferno.prototype.POSITIVE_INFINITY = new Inferno(Math.POSITIVE_INFINITY);
 })(this);
