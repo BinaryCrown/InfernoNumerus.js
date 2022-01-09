@@ -1,6 +1,6 @@
-// A large number library which uses logarithms to store numbers up to 10^^900719925474099 (10^^Number.MAX_SAFE_INTEGER).
-// Some accuracy is sacrificed if the number is small enough, however.
-// Some snippets of code e.g. Inferno.prototype.mod were borrowed from github.com/aarextiaokhiao/magna_numerus.js/blob/master/logarithmica_numerus_lite.js
+// A large number library which uses logarithms to store numbers up to 10^^900719925474099.
+// Some significant accuracy is sacrificed if the number is small enough (less than 10^^100), however.
+// Some snippets of code e.g. Inferno.prototype.mod were borrowed from aarextiaokhiao/magna_numerus.js/logarithmica_numerus_lite.js
 
 (function (globalScope) {
   "use strict";
@@ -154,6 +154,7 @@
       return this;
     }
     this.log += Math.log10(1 - 10 ** -logdiff);
+    this.val = this.log;
     return this;
   };
   Inferno.prototype.mul = function (v) {
@@ -164,7 +165,11 @@
   };
   Inferno.prototype.div = function (v) {
     v = new Inferno(v);
-    if ((this.log == Number.POSITIVE_INFINITY || this.log == Number.NEGATIVE_INFINITY) && v.log == this.log) {
+    if (
+      (this.log == Number.POSITIVE_INFINITY ||
+        this.log == Number.NEGATIVE_INFINITY) &&
+      v.log == this.log
+    ) {
       this.log = Number.NEGATIVE_INFINITY;
       this.val = 0;
       return this;
@@ -186,6 +191,7 @@
       v.log == this.log
     ) {
       this.log = Number.NEGATIVE_INFINITY;
+      this.val = 0;
       return this;
     }
     var logdiff = this.log - v.log;
@@ -201,12 +207,14 @@
         v.log = Number.NEGATIVE_INFINITY;
       } else {
         v.log += Math.log10(modulo - modInt);
+        v.val = v.log;
       }
     }
     return v;
   };
   Inferno.prototype.inv = function () {
     this.log = -this.log;
+    this.val = 1 / this.val;
     return this;
   };
   Inferno.prototype.eq = function (v) {
@@ -259,6 +267,26 @@
     let k = Inferno.fromArray(z);
     return this.log <= -k;
   };
+  Inferno.prototype.bas = function (v) {
+    v = new Inferno(v);
+    v.log *= this.val;
+    v.val **= this.val;
+    return v;
+  };
+  Inferno.prototype.neg = function (v = this.zero) {
+    v = new Inferno(v);
+    var logdiff = v.log - this.log;
+    if (logdiff < 0) {
+      v.log = Number.NEGATIVE_INFINITY;
+      return v;
+    }
+    if (logdiff >= 15 || this.log == Number.NEGATIVE_INFINITY) {
+      return v;
+    }
+    v.log += Math.log10(1 - 10 ** -logdiff);
+    v.val = v.log;
+    return v;
+  };
   Inferno.prototype.doub = function () {
     return this.mul(2);
   };
@@ -289,8 +317,35 @@
   Inferno.prototype.log = function () {
     return new Inferno(this.log);
   };
-  Inferno.prototype.ran = function () {
-    return this.mul(Math.random());
+  Inferno.prototype.ln = function () {
+    return new Inferno(Math.log(this.val));
+  };
+  Inferno.prototype.log2 = function () {
+    return new Inferno(Math.log2(this.val));
+  };
+  Inferno.prototype.logb = function (v) {
+    return new Inferno(Math.log(this.val) / Math.log(v));
+  };
+  Inferno.prototype.logbr = function (v) {
+    return new Inferno(Math.log(v) / Math.log(this.val));
+  };
+  Inferno.prototype.floor = function (v = 1) {
+    return new Inferno(Math.floor(this.val / v) * v);
+  };
+  Inferno.prototype.round = function (v = 1) {
+    return new Inferno(Math.round(this.val / v) * v);
+  };
+  Inferno.prototype.ceil = function (v = 1) {
+    return new Inferno(Math.ceil(this.val / v) * v);
+  };
+  Inferno.prototype.ran = function (v = 0) {
+    return new Inferno(Math.random() * (this.val - v) + v);
+  };
+  Inferno.prototype.sign = function () {
+    return new Inferno(Math.sign(this.val));
+  };
+  Inferno.prototype.abs = function () {
+    return new Inferno(Math.abs(this.val));
   };
   Inferno.prototype.num = function () {
     return this.toNumber();
